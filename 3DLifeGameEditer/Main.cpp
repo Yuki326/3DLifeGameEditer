@@ -140,7 +140,7 @@ _Triangle renderTriangle(_Triangle3D t) {
 	result.points.p0 = toVec2(t.points.p0);
 	result.points.p1 = toVec2(t.points.p1);
 	result.points.p2 = toVec2(t.points.p2);
-
+	
 
 	return result;
 }
@@ -164,7 +164,7 @@ Array<_Triangle> moveCenterModel(Array<_Triangle> triangles) {
 
 //モデリング変換
 Array<_Triangle3D> toWorldModel(Array<_Triangle3D> triangles, Object object) {
-	AfinParameter3D afin1, afin2, afin3;
+	AfinParameter3D afin1, afin2,afin3;
 	double w = object.angle.w / 50;
 	double h = object.angle.h / 50;
 	afin1 = { cos(w),0,-sin(w),0,0,1,0,0,sin(w),0,cos(w),0 };
@@ -182,8 +182,8 @@ Array<_Triangle3D> toWorldModel(Array<_Triangle3D> triangles, Object object) {
 // 視野変換
 
 Array<_Triangle3D> conversionFieldModel(Array<_Triangle3D> triangles, Object camera) {
-	AfinParameter3D afin1, afin2, afin3, afin4;
-
+	AfinParameter3D afin1, afin2,afin3,afin4;
+	
 	Vec3 p = camera.pos;
 	p = Vec3{ 0,0,0 };
 	afin3 = { 1,0,0,-p.x,0,1,0,-p.y,0,0,1,-p.z };
@@ -193,7 +193,7 @@ Array<_Triangle3D> conversionFieldModel(Array<_Triangle3D> triangles, Object cam
 	afin1 = { cos(w),0,-sin(w),0,0,1,0,0,sin(w),0,cos(w),0 };
 	afin2 = { 1,0,0,0,0,cos(h),sin(h),0,0,-sin(h),cos(h),0 };
 	triangles = transFormModel(triangles, combineAfin(afin2, afin1));
-
+	
 	return triangles;
 }
 
@@ -274,7 +274,7 @@ void Main()
 		ClearPrint();
 
 		//モデリング変換
-		sample.angle.w += 0.7;
+		sample.angle.w+=0.7;
 		//sample.angle.h+=0.6;
 		sample_W = toWorldModel(samplePolygons, sample);
 
@@ -293,15 +293,10 @@ void Main()
 		t[3].color = Palette::Blue;
 		t[4].color = Palette::Green;
 		t[5].color = Palette::Red;
-		t[6].color = Palette::Yellow;
-		t[7].color = Palette::Yellow;
-		t[8].color = Palette::Orange;
-		t[9].color = Palette::Orange;
-		t[10].color = Palette::Purple;
-		t[11].color = Palette::Purple;
+		
 
 		t.map([](_Triangle t) {t.points.draw(t.color);  return 0; });
-
+		
 		//デバッグ
 		Print << Cursor::Pos(); // 現在のマウスカーソル座標を表示
 		Print << camera.angle.w;
