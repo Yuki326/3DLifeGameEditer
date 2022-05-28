@@ -196,22 +196,6 @@ Vec3 AngleToVec3(Angle a) {
 	return changePos3D(res, combineAfin(afin2, afin1));
 }
 // 投影変換
-Vec2 toVec2(Vec3 pos) {
-	return 1 ? Vec2{ pos.x,pos.y } : Vec2{ 0,0 };
-}
-_Triangle renderTriangle(_Triangle3D t) {
-	_Triangle result;
-	result.points.p0 = toVec2(t.points.p0);
-	result.points.p1 = toVec2(t.points.p1);
-	result.points.p2 = toVec2(t.points.p2);
-	
-
-	return result;
-}
-Array<_Triangle> renderModel(Array<_Triangle3D> triangles) {
-	_Triangle n = {};
-	return triangles.map([n](_Triangle3D t) { return polygon_side_chk(t.points, Vec3{ 0,0,1 }) ? renderTriangle(t) : n; });
-}
 Grid<Color> renderModel2(Array<_Triangle3D> triangles) {//todo
 	Vec3 centerRay = {0,0,SCREEN_W/2};
 	Vec3 origin = { 0,0,0 };
@@ -271,21 +255,6 @@ Array<_Triangle3D> conversionFieldModel(Array<_Triangle3D> triangles, Object cam
 	
 	return triangles;
 }
-//ビューポート変換
-Vec2 moveCenterPos(Vec2 p) {
-	return p + Scene::Center();
-}
-_Triangle moveCenterTriangle(_Triangle t) {
-	t.points.p0 = moveCenterPos(t.points.p0);
-	t.points.p1 = moveCenterPos(t.points.p1);
-	t.points.p2 = moveCenterPos(t.points.p2);
-	return t;
-}
-Array<_Triangle> moveCenterModel(Array<_Triangle> triangles) {
-	return triangles.map([](_Triangle t) { return moveCenterTriangle(t); });
-}
-
-
 
 void Main()
 {
@@ -381,15 +350,7 @@ void Main()
 				Rect(j*5, i*5, 5, 5).draw(screen[i][j]);
 			}
 		}
-		// 投影変換
-		//Array<_Triangle> t = renderModel(sample_W_camera);
-		// ビューポート変換
-		//t = moveCenterModel(t);
-		// 描画
 		
-
-
-		//t.map([](_Triangle t) {t.points.draw(t.color);  return 0; });
 		//デバッグ
 		Print << Cursor::Pos(); // 現在のマウスカーソル座標を表示
 		Print << camera.angle.w;
