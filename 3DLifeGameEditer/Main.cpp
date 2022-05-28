@@ -45,8 +45,8 @@ struct zBuff {
 	double dist;
 };
 AfinParameter3D viewingPiperine;
-const int SCREEN_H = 100;
-const int SCREEN_W = 200;
+const int SCREEN_H = 200;
+const int SCREEN_W = 300;
 // 共通
 Vec3 changePos3D(Vec3 p, AfinParameter3D afin) {
 	Vec3 res;
@@ -284,27 +284,27 @@ void Main()
 	{-100,100,-100},{100,100,-100},{100,100,100},{-100,100,100}
 	};
 	Array<_Triangle3D> cubePolygons = {
-	{Triangle3D{ cubePoints[0], cubePoints[3], cubePoints[1] },Color{200,0,0}},
-	{Triangle3D{ cubePoints[1], cubePoints[3], cubePoints[2] },Color{0,200,0}},
-	{Triangle3D{ cubePoints[4], cubePoints[5], cubePoints[7] },Color{0,0,200}},
-	{Triangle3D{ cubePoints[5], cubePoints[6], cubePoints[7] },Color{100,0,0}},
-	{Triangle3D{ cubePoints[0], cubePoints[5], cubePoints[4] },Color{0,0,100}},
-	{Triangle3D{ cubePoints[1], cubePoints[5], cubePoints[0] },Color{0,0,100}},
-	{Triangle3D{ cubePoints[0], cubePoints[4], cubePoints[7] },Color{100,100,100}},
-	{Triangle3D{ cubePoints[3], cubePoints[0], cubePoints[7] },Color{100,100,100}},
+	{Triangle3D{ cubePoints[0], cubePoints[3], cubePoints[1] },Color{255,0,0}},
+	{Triangle3D{ cubePoints[1], cubePoints[3], cubePoints[2] },Color{255,0,0}},
+	{Triangle3D{ cubePoints[4], cubePoints[5], cubePoints[7] },Color{0,0,255}},
+	{Triangle3D{ cubePoints[5], cubePoints[6], cubePoints[7] },Color{0,0,255}},
+	{Triangle3D{ cubePoints[0], cubePoints[5], cubePoints[4] },Color{0,255,0}},
+	{Triangle3D{ cubePoints[1], cubePoints[5], cubePoints[0] },Color{0,255,00}},
+	{Triangle3D{ cubePoints[0], cubePoints[4], cubePoints[7] },Color{0,255,255}},
+	{Triangle3D{ cubePoints[3], cubePoints[0], cubePoints[7] },Color{0,255,255}},
 
-	{Triangle3D{ cubePoints[2], cubePoints[7], cubePoints[6] },Color{0,0,100}},
-	{Triangle3D{ cubePoints[3], cubePoints[7], cubePoints[2] },Color{0,0,100}},
+	{Triangle3D{ cubePoints[2], cubePoints[7], cubePoints[6] },Color{255,255,0}},
+	{Triangle3D{ cubePoints[3], cubePoints[7], cubePoints[2] },Color{255,255,0}},
 
-	{Triangle3D{ cubePoints[2], cubePoints[6], cubePoints[5] },Color{100,100,100}},
-	{Triangle3D{ cubePoints[1], cubePoints[2], cubePoints[5] },Color{100,100,100}},
+	{Triangle3D{ cubePoints[2], cubePoints[6], cubePoints[5] },Color{255,0,255}},
+	{Triangle3D{ cubePoints[1], cubePoints[2], cubePoints[5] },Color{255,0,255}},
 	};
 	samplePolygons = cubePolygons;
 	//モデリング変換
-	Object sample = { Angle{0,0},Vec3{0,-400,500} };
+	Object sample = { Angle{0,-12},Vec3{0,70,300} };
 	Array<_Triangle3D> sample_W = toWorldModel(samplePolygons, sample);
 	sample_W = samplePolygons;
-	Object camera = { Angle{0,0},Vec3{0,0,0} };
+	Object camera = { Angle{640,-10},Vec3{0,0,0} };
 	while (System::Update())
 	{
 		const double delta = 200 * Scene::DeltaTime();
@@ -333,13 +333,13 @@ void Main()
 		ClearPrint();
 
 		//モデリング変換
-		sample.angle.w += 0.7;
-		//sample.angle.h+=0.6;
+		sample.angle.w += 1.7;
+		//sample.angle.h -=1.6;
 		sample_W = toWorldModel(samplePolygons, sample);
 
 		//視野変換
-		camera.angle.w = Cursor::Pos().x - Scene::Center().x;
-		camera.angle.h = Cursor::Pos().y - Scene::Center().y;
+		//camera.angle.w = Cursor::Pos().x - Scene::Center().x;
+		//camera.angle.h = Cursor::Pos().y - Scene::Center().y;
 		Array<_Triangle3D> sample_W_camera = conversionFieldModel(sample_W, camera);
 		// 投影変換
 		Grid<Color> screen(SCREEN_W,SCREEN_H,Color(Palette::Black));
@@ -347,13 +347,14 @@ void Main()
 		//描画
 		for (int i = 0; i < screen.height(); i++) {
 			for (int j = 0; j < screen.width(); j++) {
-				Rect(j*5, i*5, 5, 5).draw(screen[i][j]);
+				Rect(j*3, i*3, 3, 3).draw(screen[i][j]);
 			}
 		}
 		
 		//デバッグ
 		Print << Cursor::Pos(); // 現在のマウスカーソル座標を表示
 		Print << camera.angle.w;
+		Print << sample.angle.h;
 		Print << sample.pos;
 		//Line(600, 500, 600 + cos(camera.angle.w/50)*20,500 + sin(camera.angle.w/50)*20).draw(3, Palette::Red);
 	}
