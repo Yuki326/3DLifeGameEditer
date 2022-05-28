@@ -35,8 +35,18 @@ struct _Triangle {
 	Triangle points;
 	Color color;
 };
+struct resultRayCast {
+	bool result;
+	Vec3 pos;
+	double dist;
+};
+struct zBuff {
+	Color color;
+	double dist;
+};
 AfinParameter3D viewingPiperine;
-
+const int SCREEN_H = 100;
+const int SCREEN_W = 200;
 // 共通
 Vec3 changePos3D(Vec3 p, AfinParameter3D afin) {
 	Vec3 res;
@@ -130,7 +140,61 @@ int polygon_side_chk(Triangle3D t, Vec3 v) {
 	// d==0 ポリゴンは真横を向いている。表裏不明
 	return 0;
 }
+double det(Vec3 vecA, Vec3 vecB,Vec3 vecC) {
+	return ((vecA.x * vecB.y * vecC.z)
+		+ (vecA.y * vecB.z * vecC.x)
+		+ (vecA.z * vecB.x * vecC.y)
+		- (vecA.x * vecB.z * vecC.y)
+		- (vecA.y * vecB.x * vecC.z)
+		- (vecA.z * vecB.y * vecC.x));
+}
+resultRayCast rayIntersectsTriangle(Vec3 origin,Vec3 ray,_Triangle3D tr) {
+	// 交差判定結果を表すオブジェクト
+	resultRayCast ret = { false,Vec3{0,0,0},-1 };
+	// レイの逆方向のベクトルを得る
+	Vec3 invRay = -ray;
+	Vec3 edge1 = -tr.points.p1+ tr.points.p0;
+	Vec3 edge2 = -tr.points.p2 +tr.points.p0;
 
+	// クラメルの公式の分母
+	double denominator = det(edge1, edge2, invRay);
+
+	// レイが平面と平行でないかチェック
+	if (denominator <= 0) {
+		return ret;
+	}
+
+	Vec3 d = -origin + tr.points.p0;
+
+	double u = det(d, edge2, invRay) / denominator;
+	if ((u >= 0) && (u <= 1)) {
+		double v = det(edge1, d, invRay) / denominator;
+		if ((v >= 0) && (u + v <= 1)) {
+			double t = det(edge1, edge2, d) / denominator;
+
+			// 距離がマイナスの場合は交差していない
+			if (t < 0) {
+				return ret;
+			}
+
+			ret.pos = origin + ray*t;
+			ret.result = true;
+			ret.dist = t;
+		}
+	}
+
+	return ret;
+}
+Vec3 AngleToVec3(Angle a) {
+	Vec3 res = {0,0,1};
+	double w = a.w/50;
+	double h = a.h/50;
+	AfinParameter3D afin1 = { cos(w),0,-sin(w),0,0,1,0,0,sin(w),0,cos(w),0 };
+	AfinParameter3D afin2 = { 1,0,0,0,
+		0,cos(h),sin(h),0,
+		0,-sin(h),cos(h),0 };
+	return changePos3D(res, combineAfin(afin2, afin1));
+}
 // 投影変換
 Vec2 toVec2(Vec3 pos) {
 	return 1 ? Vec2{ pos.x,pos.y } : Vec2{ 0,0 };
@@ -148,19 +212,30 @@ Array<_Triangle> renderModel(Array<_Triangle3D> triangles) {
 	_Triangle n = {};
 	return triangles.map([n](_Triangle3D t) { return polygon_side_chk(t.points, Vec3{ 0,0,1 }) ? renderTriangle(t) : n; });
 }
-//ビューポート変換
-Vec2 moveCenterPos(Vec2 p) {
-	return p + Scene::Center();
+Grid<Color> renderModel2(Array<_Triangle3D> triangles) {//todo
+	Vec3 centerRay = {0,0,SCREEN_W/2};
+	Vec3 origin = { 0,0,0 };
+	Vec3 ray;
+	Grid<Color> screen(SCREEN_W, SCREEN_H, Color(Palette::Black));
+	double *_nearest;
+	double nearest;
+	for (int i = 0; i < SCREEN_H; i++) {
+		for (int j = 0; j < SCREEN_H; j++){
+			ray = centerRay + Vec3{j-SCREEN_W/2, i-SCREEN_H/2, 0};
+			nearest = 10000;//todo
+			for (int k = 0; k < triangles.size(); k++) {
+				resultRayCast a = rayIntersectsTriangle(origin, ray, triangles[k]);
+				
+				if (a.dist < nearest && a.result) {
+					screen[i][j] = triangles[k].color;
+					nearest = a.dist;
+				}
+			}
+		}
+	}
+	return screen;
 }
-_Triangle moveCenterTriangle(_Triangle t) {
-	t.points.p0 = moveCenterPos(t.points.p0);
-	t.points.p1 = moveCenterPos(t.points.p1);
-	t.points.p2 = moveCenterPos(t.points.p2);
-	return t;
-}
-Array<_Triangle> moveCenterModel(Array<_Triangle> triangles) {
-	return triangles.map([](_Triangle t) { return moveCenterTriangle(t); });
-}
+
 
 //モデリング変換
 Array<_Triangle3D> toWorldModel(Array<_Triangle3D> triangles, Object object) {
@@ -196,6 +271,21 @@ Array<_Triangle3D> conversionFieldModel(Array<_Triangle3D> triangles, Object cam
 	
 	return triangles;
 }
+//ビューポート変換
+Vec2 moveCenterPos(Vec2 p) {
+	return p + Scene::Center();
+}
+_Triangle moveCenterTriangle(_Triangle t) {
+	t.points.p0 = moveCenterPos(t.points.p0);
+	t.points.p1 = moveCenterPos(t.points.p1);
+	t.points.p2 = moveCenterPos(t.points.p2);
+	return t;
+}
+Array<_Triangle> moveCenterModel(Array<_Triangle> triangles) {
+	return triangles.map([](_Triangle t) { return moveCenterTriangle(t); });
+}
+
+
 
 void Main()
 {
@@ -213,9 +303,9 @@ void Main()
 		{100,80,100},{0,80,100}
 	};
 	Array<_Triangle3D> samplePolygons = {
-		{Triangle3D{ samplePoints[0], samplePoints[2], samplePoints[1] },Color{0,0,0}},
-		{Triangle3D{ samplePoints[0], samplePoints[1], samplePoints[3] },Color{0,0,0}},
-		{Triangle3D{ samplePoints[0], samplePoints[3], samplePoints[2] },Color{0,0,0}},
+		{Triangle3D{ samplePoints[0], samplePoints[2], samplePoints[1] },Color{0,200,0}},
+		{Triangle3D{ samplePoints[0], samplePoints[1], samplePoints[3] },Color{50,0,0}},
+		{Triangle3D{ samplePoints[0], samplePoints[3], samplePoints[2] },Color{0,0,40}},
 		{Triangle3D{ samplePoints[4], samplePoints[1], samplePoints[2] },Color{100,0,0}},
 		{Triangle3D{ samplePoints[4], samplePoints[3], samplePoints[1] },Color{0,0,100}},
 		{Triangle3D{ samplePoints[4], samplePoints[2], samplePoints[3] },Color{100,100,100}},
@@ -225,9 +315,9 @@ void Main()
 	{-100,100,-100},{100,100,-100},{100,100,100},{-100,100,100}
 	};
 	Array<_Triangle3D> cubePolygons = {
-	{Triangle3D{ cubePoints[0], cubePoints[3], cubePoints[1] },Color{0,0,0}},
-	{Triangle3D{ cubePoints[1], cubePoints[3], cubePoints[2] },Color{0,0,0}},
-	{Triangle3D{ cubePoints[4], cubePoints[5], cubePoints[7] },Color{0,0,0}},
+	{Triangle3D{ cubePoints[0], cubePoints[3], cubePoints[1] },Color{200,0,0}},
+	{Triangle3D{ cubePoints[1], cubePoints[3], cubePoints[2] },Color{0,200,0}},
+	{Triangle3D{ cubePoints[4], cubePoints[5], cubePoints[7] },Color{0,0,200}},
 	{Triangle3D{ cubePoints[5], cubePoints[6], cubePoints[7] },Color{100,0,0}},
 	{Triangle3D{ cubePoints[0], cubePoints[5], cubePoints[4] },Color{0,0,100}},
 	{Triangle3D{ cubePoints[1], cubePoints[5], cubePoints[0] },Color{0,0,100}},
@@ -240,12 +330,12 @@ void Main()
 	{Triangle3D{ cubePoints[2], cubePoints[6], cubePoints[5] },Color{100,100,100}},
 	{Triangle3D{ cubePoints[1], cubePoints[2], cubePoints[5] },Color{100,100,100}},
 	};
-	//samplePolygons = cubePolygons;
+	samplePolygons = cubePolygons;
 	//モデリング変換
-	Object sample = { Angle{0,0},Vec3{0,0,0} };
+	Object sample = { Angle{0,0},Vec3{0,-400,500} };
 	Array<_Triangle3D> sample_W = toWorldModel(samplePolygons, sample);
 	sample_W = samplePolygons;
-	Object camera = { Angle{0,0},Vec3{0,400,0} };
+	Object camera = { Angle{0,0},Vec3{0,0,0} };
 	while (System::Update())
 	{
 		const double delta = 200 * Scene::DeltaTime();
@@ -274,29 +364,32 @@ void Main()
 		ClearPrint();
 
 		//モデリング変換
-		sample.angle.w+=0.7;
+		sample.angle.w += 0.7;
 		//sample.angle.h+=0.6;
 		sample_W = toWorldModel(samplePolygons, sample);
 
 		//視野変換
-		//camera.angle.w = Cursor::Pos().x - Scene::Center().x;
-		//camera.angle.h = Cursor::Pos().y - Scene::Center().y;
+		camera.angle.w = Cursor::Pos().x - Scene::Center().x;
+		camera.angle.h = Cursor::Pos().y - Scene::Center().y;
 		Array<_Triangle3D> sample_W_camera = conversionFieldModel(sample_W, camera);
 		// 投影変換
-		Array<_Triangle> t = renderModel(sample_W_camera);
+		Grid<Color> screen(SCREEN_W,SCREEN_H,Color(Palette::Black));
+		screen = renderModel2(sample_W_camera);
+		//描画
+		for (int i = 0; i < screen.height(); i++) {
+			for (int j = 0; j < screen.width(); j++) {
+				Rect(j*5, i*5, 5, 5).draw(screen[i][j]);
+			}
+		}
+		// 投影変換
+		//Array<_Triangle> t = renderModel(sample_W_camera);
 		// ビューポート変換
-		t = moveCenterModel(t);
+		//t = moveCenterModel(t);
 		// 描画
-		t[0].color = Palette::Red;
-		t[1].color = Palette::Blue;
-		t[2].color = Palette::Green;
-		t[3].color = Palette::Blue;
-		t[4].color = Palette::Green;
-		t[5].color = Palette::Red;
 		
 
-		t.map([](_Triangle t) {t.points.draw(t.color);  return 0; });
-		
+
+		//t.map([](_Triangle t) {t.points.draw(t.color);  return 0; });
 		//デバッグ
 		Print << Cursor::Pos(); // 現在のマウスカーソル座標を表示
 		Print << camera.angle.w;
