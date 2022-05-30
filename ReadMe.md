@@ -7,7 +7,7 @@ https://www.youtube.com/watch?v=dQJ5aEsP6Fs
 - 仕様ライブラリ：siv3D
 https://siv3d.github.io/ja-jp/
 
-# ルール(仮)
+# 3dライフゲームのルール(仮)
 - 1.立方体を格子状に区切る。
 - 2.一つの格子をセルと呼び、セルは生と死の二つの状態を持つ。
 - 3.セルの生死は次の値に基づいて決定する。
