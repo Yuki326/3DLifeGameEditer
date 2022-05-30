@@ -323,15 +323,10 @@ void Main()
 	Array<_Triangle3D> framePolygons2 = resizeModel(framePolygons, 0.1);
 
 	Array<Model> models = {
-		//{samplePolygons,ex1,{0,0,0},100},
 		{framePolygons,ex1,{0,0,0},100},
-		//{putModel(framePolygons2,{0,0,0}),ex1,{0,0,0},100},
 
 	};
 
-	Array<Model> box = {
-		{framePolygons,ex1,{0,0,0},100},
-	};
 	Vec3 pos;
 	for (int i = -20; i < 20; i++) {
 		pos.x = 4*i;
@@ -339,7 +334,7 @@ void Main()
 			pos.y = 4*j;
 			for (int k = -20; k < 20; k++) {
 				pos.z = 4*k;
-				if(rand()%10==0)
+				if(rand()%100==0)
 				models << Model{ putModel(cubePolygons,pos), ex1, { 0,0,0 }, 100 };
 			}
 		}
