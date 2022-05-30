@@ -61,6 +61,12 @@ _Triangle3D transFormTriangle3D(_Triangle3D t, AfinParameter3D afin) {
 Array<_Triangle3D> transFormModel(Array<_Triangle3D> triangles, AfinParameter3D afin) {
 	return triangles.map([afin](_Triangle3D t) { return transFormTriangle3D(t, afin); });
 }
+Array<Model> transFormModels (Array<Model> models, AfinParameter3D afin) {
+	for (int i = 0; i < models.size(); i++) {
+		models[i].shape = transFormModel(models[i].shape, afin);
+	}
+	return models;
+}
 AfinParameter3D combineAfin(AfinParameter3D x, AfinParameter3D y) {
 	AfinParameter3D res;
 	res.a = x.a * y.a + x.e * y.b + x.i * y.c + x.m * y.d;
@@ -154,7 +160,7 @@ Array<_Triangle3D> sortTriangle3D(Array<_Triangle3D> triangles) {//奥行ソー�
 // 投影変換
 Vec2 toVec2(Vec3 pos) {
 	return Vec2{ pos.x,pos.y };
-	//return Vec2{ pos.x/pos.z*500,pos.y/pos.z*500 };//投視投影　現時点だと歪んで見える
+	//return Vec2{ pos.x/pos.z*200,pos.y/pos.z*200 };//投視投影　現時点だと歪んで見える
 }
 _Triangle renderTriangle(_Triangle3D t) {
 	_Triangle result;
@@ -207,7 +213,7 @@ Array<_Triangle3D> toWorldModel(Array<_Triangle3D> triangles, Object object) {
 	triangles = transFormModel(triangles, combineAfin(afin2, afin1));
 	viewingPiperine = combineAfin(afin2, afin1);
 	Vec3 p = object.pos;
-	afin3 = { 1,0,0,-p.x,0,1,0,-p.y,0,0,1,-p.z };
+	afin3 = { 1,0,0,p.x,0,1,0,p.y,0,0,1,p.z };
 	triangles = transFormModel(triangles, afin3);
 	return triangles;
 }
@@ -239,7 +245,20 @@ Array<Model> conversionField(Array<Model> models,Object camera) {
 	}
 	return models;
 }
-
+Array<_Triangle3D> resizeModel(Array<_Triangle3D> model, double rate) {
+	AfinParameter3D afin = { rate,0,0,0,0,rate,0,0,0,0,rate,0,0,0,0,1 };
+	return transFormModel(model, afin);
+}
+Array<_Triangle3D> paintModel(Array<_Triangle3D> model, Color c) {
+	for (int i = 0; i < model.size(); i++) {
+		model[i].color = c;
+	}
+	return model;
+}
+Array<_Triangle3D> putModel(Array<_Triangle3D> models, Vec3 pos) {
+	AfinParameter3D afin = { 0,0,0,pos.x,0,0,0,pos.y,0,0,0,pos.z,0,0,0,1 };	
+	return transFormModel(models, afin);
+}
 
 void Main()
 {
@@ -269,14 +288,14 @@ void Main()
 	{-2,2,-2},{2,2,-2},{2,2,2},{-2,2,2}
 	};
 	Array<_Triangle3D> cubePolygons = {
-	{Triangle3D{ cubePoints[0], cubePoints[3], cubePoints[1] },Color{255,0,0}},
-	{Triangle3D{ cubePoints[1], cubePoints[3], cubePoints[2] },Color{255,0,0}},
-	{Triangle3D{ cubePoints[4], cubePoints[5], cubePoints[7] },Color{0,0,255}},
-	{Triangle3D{ cubePoints[5], cubePoints[6], cubePoints[7] },Color{0,0,255}},
-	{Triangle3D{ cubePoints[0], cubePoints[5], cubePoints[4] },Color{0,255,0,80}},
-	{Triangle3D{ cubePoints[1], cubePoints[5], cubePoints[0] },Color{0,255,00,80}},
-	{Triangle3D{ cubePoints[0], cubePoints[4], cubePoints[7] },Color{0,255,255,80}},
-	{Triangle3D{ cubePoints[3], cubePoints[0], cubePoints[7] },Color{0,255,255,80}},
+	{Triangle3D{ cubePoints[0], cubePoints[3], cubePoints[1] },Color{0,255,0}},
+	{Triangle3D{ cubePoints[1], cubePoints[3], cubePoints[2] },Color{0,255,0}},
+	{Triangle3D{ cubePoints[4], cubePoints[5], cubePoints[7] },Color{255,0,0}},
+	{Triangle3D{ cubePoints[5], cubePoints[6], cubePoints[7] },Color{255,0,0}},
+	{Triangle3D{ cubePoints[0], cubePoints[5], cubePoints[4] },Color{0,0,255}},
+	{Triangle3D{ cubePoints[1], cubePoints[5], cubePoints[0] },Color{0,0,255}},
+	{Triangle3D{ cubePoints[0], cubePoints[4], cubePoints[7] },Color{0,255,255}},
+	{Triangle3D{ cubePoints[3], cubePoints[0], cubePoints[7] },Color{0,255,255}},
 
 	{Triangle3D{ cubePoints[2], cubePoints[7], cubePoints[6] },Color{255,255,0}},
 	{Triangle3D{ cubePoints[3], cubePoints[7], cubePoints[2] },Color{255,255,0}},
@@ -285,26 +304,38 @@ void Main()
 	{Triangle3D{ cubePoints[1], cubePoints[2], cubePoints[5] },Color{255,0,255}},
 
 	};
-	Object ex1 = { Angle{0,0},Vec3{-150,0,1000} };
+	Object ex0 = { Angle{0,0},Vec3{0,0,0} };
+	Object ex1 = { Angle{0,0},Vec3{0,0,500} };
 	Object ex2 = { Angle{0,-12},Vec3{0,-40,500} };
+	Object ex3 = { Angle{0,-12},Vec3{50,50,50} };
+
+	Array<_Triangle3D> framePolygons = resizeModel(cubePolygons, 60);
+	//framePolygons = paintModel(framePolygons, { 0,255,0,255 });
 	Array<Model> models = {
-		{cubePolygons,ex2,{0,0,0},100},
 		{samplePolygons,ex1,{0,0,0},100},
+		{framePolygons,ex1,{0,0,0},100},
+
 	};
-	for (int i = 0; i < 40; i++) {
-		ex1.pos.x = 5*i-150;
-		for (int j = 0; j < 40; j++) {
-			ex1.pos.y = 5*j-150;
-			for (int k = 0; k < 40; k++) {
-				ex1.pos.z = 5 * k+50;
-				if(rand()%4==0)
-				models << Model{ cubePolygons, ex1, { 0,0,0 }, 100 };
+
+	Array<Model> box = {
+		{framePolygons,ex1,{0,0,0},100},
+	};
+	Vec3 pos;
+	for (int i = -4; i < 4; i++) {
+		pos.x = 4*i;
+		for (int j = -4; j < 4; j++) {
+			pos.y = 4*j;
+			for (int k = -4; k < 4; k++) {
+				pos.z = 4*k;
+				if(rand()%10==0)
+				models << Model{ putModel(framePolygons,pos), ex1, { 0,0,0 }, 100 };
 			}
 		}
 	}
+	
 	//モデリング変換
 	Array<Model> models_W = toWorld(models);
-	Object camera = { Angle{0,-10},Vec3{0,0,0} };
+	Object camera = { Angle{0,0},Vec3{0,0,0} };
 	Grid<int32> fieldState(32, 32, 0);//３次元配列　値で１列を管理
 
 	while (System::Update())
@@ -312,39 +343,45 @@ void Main()
 		const double delta = 200 * Scene::DeltaTime();
 
 		// 上下左右キーで移動
-		if (KeyLeft.pressed())
+		if (KeyA.pressed())
 		{
 			models[1].object.pos.x += delta;
 		}
 
-		if (KeyRight.pressed())
+		if (KeyD.pressed())
 		{
 			models[1].object.pos.x -= delta;
 		}
 
-		if (KeyUp.pressed())
+		if (KeyW.pressed())
 		{
-			models[1].object.pos.y -= delta;
+			models[1].object.pos.z -= delta;
 		}
 
-		if (KeyDown.pressed())
+		if (KeyS.pressed())
+		{
+			models[1].object.pos.z += delta;
+		}
+		if (KeySpace.pressed())
 		{
 			models[1].object.pos.y += delta;
 		}
 
-		ClearPrint();
-
-		for (int i = 1; i < models.size(); i++) {
-			models[i].object.angle.w += 1.7;
+		if (KeyShift.pressed())
+		{
+			models[1].object.pos.y -= delta;
 		}
-		
+
+		ClearPrint();
+		models[1].object.angle.w += delta/3;
+
 		const double hue = Scene::Time() * 60.0;
 		models[0].shape[4].color = HSV(hue, 0.6, 1.0);
 
 		//視点移動
 		camera.angle.w = Cursor::Pos().x - Scene::Center().x;
 		camera.angle.h = Cursor::Pos().y - Scene::Center().y;
-
+		
 		//モデリング変換
 		models_W = toWorld(models);
 
@@ -363,7 +400,7 @@ void Main()
 		//デバッグ
 		Print << Cursor::Pos(); // 現在のマウスカーソル座標を表示
 		Print << camera.angle.w;
-		Print << camera.pos;
+		Print << models_W_camera[0].shape[0].points.p0;
 	}
 }
 
