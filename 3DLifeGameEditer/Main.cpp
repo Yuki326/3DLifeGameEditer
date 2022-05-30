@@ -38,7 +38,7 @@ struct _Triangle {
 struct Model {
 	Array<_Triangle3D> shape;
 	Object object;
-	Vec3 corePos;
+	Vec3 zahyo; //ゲームのフィールド(格子)上の座標
 	int hp;
 };
 AfinParameter3D viewingPiperine;
@@ -336,7 +336,7 @@ void Main()
 			for (int k = 0; k < SIDE_CELLS; k++) {
 				pos.z = 4* (k - SIDE_CELLS / 2);
 				if (rand() % 100 <= CELL_PER) {
-					models << Model{ putModel(cubePolygons,pos), ex1, { 0,0,0 }, 100 };
+					models << Model{ putModel(cubePolygons,pos), ex1, { i,j,k }, 100 };
 					fieldState[i][j] &= 1<<k;
 				}
 			}
