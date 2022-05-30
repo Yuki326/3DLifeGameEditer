@@ -42,8 +42,8 @@ struct Model {
 	int hp;
 };
 AfinParameter3D viewingPiperine;
-
-
+const int CELL_PER = 1;
+const int SIDE_CELLS = 40;
 // 共通
 Vec3 changePos3D(Vec3 p, AfinParameter3D afin) {
 	Vec3 res;
@@ -326,16 +326,19 @@ void Main()
 		{framePolygons,ex1,{0,0,0},100},
 
 	};
+	Grid<int32> fieldState(SIDE_CELLS, SIDE_CELLS, 0);//３次元配列　z軸は2進数で管理
 
 	Vec3 pos;
-	for (int i = -20; i < 20; i++) {
-		pos.x = 4*i;
-		for (int j = -20; j < 20; j++) {
-			pos.y = 4*j;
-			for (int k = -20; k < 20; k++) {
-				pos.z = 4*k;
-				if(rand()%100==0)
-				models << Model{ putModel(cubePolygons,pos), ex1, { 0,0,0 }, 100 };
+	for (int i = 0; i < SIDE_CELLS; i++) {
+		pos.x = 4*(i - SIDE_CELLS / 2);
+		for (int j = 0; j < SIDE_CELLS; j++) {
+			pos.y = 4* (j - SIDE_CELLS / 2);
+			for (int k = 0; k < SIDE_CELLS; k++) {
+				pos.z = 4* (k - SIDE_CELLS / 2);
+				if (rand() % 100 <= CELL_PER) {
+					models << Model{ putModel(cubePolygons,pos), ex1, { 0,0,0 }, 100 };
+					fieldState[i][j] &= 1<<k;
+				}
 			}
 		}
 	}
@@ -343,7 +346,6 @@ void Main()
 	//モデリング変換
 	Array<Model> models_W = toWorld(models);
 	Object camera = { Angle{0,10},Vec3{0,0,0} };
-	Grid<int32> fieldState(32, 32, 0);//３次元配列　値で１列を管理
 
 	while (System::Update())
 	{
