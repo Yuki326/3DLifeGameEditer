@@ -146,7 +146,7 @@ bool isFartherTriangle(_Triangle3D t, _Triangle3D a) {
 	return targetDist > dist;
 }
 Array<_Triangle3D> sortTriangle3D(Array<_Triangle3D> triangles) {//奥行ソート
-	for (int i = 0; i < triangles.size(); i++) {
+	for (int i = 0; i < triangles.size(); i++) {//todo 速いソートに変更
 		for (int j = i; j < triangles.size(); j++) {
 			if (isFartherTriangle(triangles[i], triangles[j])) {
 				_Triangle3D tmp = triangles[i];
@@ -180,12 +180,21 @@ Array<_Triangle> renderModel(Array<_Triangle3D> triangles) {
 Array<_Triangle> render(Array<Model> models) {
 	Array<_Triangle> res = {};
 	for (int i = 0; i < models.size(); i++) {
-		 Array<_Triangle> toAdd = renderModel(models[i].shape);
-		 for (int i = 0; i < toAdd.size(); i++) {
-			 res << toAdd[i];
-		 }
+		Array<_Triangle> toAdd = renderModel(models[i].shape);
+		for (int j = 0; j < toAdd.size(); j++) {
+			res << toAdd[j];
+		}
 	}
 	return res;
+	//Array<_Triangle3D> all;//ポリゴン数が増えるとソートに時間がかかるため一旦コメントアウト
+	//Array<_Triangle3D> toAdd;
+	//for (int i = 0; i < models.size(); i++) {
+		//toAdd = models[i].shape;
+		//for (int j = 0; j < toAdd.size(); j++) {
+			//all << toAdd[j];
+		//}
+	//}
+	//return renderModel(all);
 }
 //ビューポート変換
 Vec2 moveCenterPos(Vec2 p) {
@@ -256,7 +265,7 @@ Array<_Triangle3D> paintModel(Array<_Triangle3D> model, Color c) {
 	return model;
 }
 Array<_Triangle3D> putModel(Array<_Triangle3D> models, Vec3 pos) {
-	AfinParameter3D afin = { 0,0,0,pos.x,0,0,0,pos.y,0,0,0,pos.z,0,0,0,1 };	
+	AfinParameter3D afin = { 1,0,0,pos.x,0,1,0,pos.y,0,0,1,pos.z,0,0,0,1 };	
 	return transFormModel(models, afin);
 }
 
@@ -310,10 +319,13 @@ void Main()
 	Object ex3 = { Angle{0,-12},Vec3{50,50,50} };
 
 	Array<_Triangle3D> framePolygons = resizeModel(cubePolygons, 60);
-	//framePolygons = paintModel(framePolygons, { 0,255,0,255 });
+	framePolygons = paintModel(framePolygons, { 0,255,0,45 });
+	Array<_Triangle3D> framePolygons2 = resizeModel(framePolygons, 0.1);
+
 	Array<Model> models = {
-		{samplePolygons,ex1,{0,0,0},100},
+		//{samplePolygons,ex1,{0,0,0},100},
 		{framePolygons,ex1,{0,0,0},100},
+		//{putModel(framePolygons2,{0,0,0}),ex1,{0,0,0},100},
 
 	};
 
@@ -321,21 +333,21 @@ void Main()
 		{framePolygons,ex1,{0,0,0},100},
 	};
 	Vec3 pos;
-	for (int i = -4; i < 4; i++) {
+	for (int i = -20; i < 20; i++) {
 		pos.x = 4*i;
-		for (int j = -4; j < 4; j++) {
+		for (int j = -20; j < 20; j++) {
 			pos.y = 4*j;
-			for (int k = -4; k < 4; k++) {
+			for (int k = -20; k < 20; k++) {
 				pos.z = 4*k;
 				if(rand()%10==0)
-				models << Model{ putModel(framePolygons,pos), ex1, { 0,0,0 }, 100 };
+				models << Model{ putModel(cubePolygons,pos), ex1, { 0,0,0 }, 100 };
 			}
 		}
 	}
 	
 	//モデリング変換
 	Array<Model> models_W = toWorld(models);
-	Object camera = { Angle{0,0},Vec3{0,0,0} };
+	Object camera = { Angle{0,10},Vec3{0,0,0} };
 	Grid<int32> fieldState(32, 32, 0);//３次元配列　値で１列を管理
 
 	while (System::Update())
@@ -373,8 +385,9 @@ void Main()
 		}
 
 		ClearPrint();
-		models[1].object.angle.w += delta/3;
-
+		for (int i = 0; i < models.size(); i++) {
+			models[i].object.angle.w += delta / 3;
+		}
 		const double hue = Scene::Time() * 60.0;
 		models[0].shape[4].color = HSV(hue, 0.6, 1.0);
 
