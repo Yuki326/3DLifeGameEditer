@@ -265,8 +265,8 @@ void Main()
 		{Triangle3D{ samplePoints[4], samplePoints[2], samplePoints[3] },Color{100,100,100}},
 	};
 	Array<Vec3> cubePoints = {
-	{-10,-10,-10},{10,-10,-10},{10,-10,10},{-10,-10,10},
-	{-10,10,-10},{10,10,-10},{10,10,10},{-10,10,10}
+	{-2,-2,-2},{2,-2,-2},{2,-2,2},{-2,-2,2},
+	{-2,2,-2},{2,2,-2},{2,2,2},{-2,2,2}
 	};
 	Array<_Triangle3D> cubePolygons = {
 	{Triangle3D{ cubePoints[0], cubePoints[3], cubePoints[1] },Color{255,0,0}},
@@ -286,28 +286,24 @@ void Main()
 
 	};
 	Object ex1 = { Angle{0,0},Vec3{-150,0,1000} };
-	Object sample = { Angle{0,-12},Vec3{0,-40,500} };
+	Object ex2 = { Angle{0,-12},Vec3{0,-40,500} };
 	Array<Model> models = {
-		{cubePolygons,sample,{0,0,0},100},
+		{cubePolygons,ex2,{0,0,0},100},
 		{samplePolygons,ex1,{0,0,0},100},
 	};
-	for (int i = 0; i < 30; i++) {
-		ex1.pos.x = 50*i-1500;
-		for (int j = 0; j < 30; j++) {
-			ex1.pos.y = 50*j-1500;
-			for (int k = 0; k < 3; k++) {
-				ex1.pos.z = 50 * k+50;
+	for (int i = 0; i < 40; i++) {
+		ex1.pos.x = 5*i-150;
+		for (int j = 0; j < 40; j++) {
+			ex1.pos.y = 5*j-150;
+			for (int k = 0; k < 40; k++) {
+				ex1.pos.z = 5 * k+50;
+				if(rand()%4==0)
 				models << Model{ cubePolygons, ex1, { 0,0,0 }, 100 };
 			}
 		}
 	}
-	//samplePolygons = cubePolygons;
 	//モデリング変換
-	Array<_Triangle3D> sample_W = toWorldModel(samplePolygons, sample);
 	Array<Model> models_W = toWorld(models);
-	for (int i = 0; i < cubePolygons.size(); i++) {
-		samplePolygons << cubePolygons[i];
-	}
 	Object camera = { Angle{0,-10},Vec3{0,0,0} };
 	Grid<int32> fieldState(32, 32, 0);//３次元配列　値で１列を管理
 
@@ -337,42 +333,37 @@ void Main()
 		}
 
 		ClearPrint();
+
 		for (int i = 1; i < models.size(); i++) {
 			models[i].object.angle.w += 1.7;
 		}
-		//sample.angle.h -=1.6;
-		//モデリング変換
+		
 		const double hue = Scene::Time() * 60.0;
 		models[0].shape[4].color = HSV(hue, 0.6, 1.0);
-		sample_W = toWorldModel(samplePolygons, sample);
-		models_W = toWorld(models);
-		//視野変換
+
+		//視点移動
 		camera.angle.w = Cursor::Pos().x - Scene::Center().x;
 		camera.angle.h = Cursor::Pos().y - Scene::Center().y;
-		//models[0].object.angle.w = Cursor::Pos().x - Scene::Center().x;
-		//models[0].object.angle.h = Cursor::Pos().y - Scene::Center().y;
-		Array<_Triangle3D> sample_W_camera = conversionFieldModel(sample_W, camera);
+
+		//モデリング変換
+		models_W = toWorld(models);
+
+		//視野変換
 		Array<Model> models_W_camera = conversionField(models_W, camera);
 
-		sample_W_camera[0].color = Color(Palette::Red);
-
 		// 投影変換
-
-		//Array<_Triangle> t = renderModel(sample_W_camera);
 		Array<_Triangle> t = render(models_W_camera);
+
 		// ビューポート変換
 		t = moveCenterModel(t);
-		Print << t[7].color;
-		Print << t[0].color;
+		
 		//描画
 		t.map([](_Triangle t) {t.points.draw(t.color);  return 0; });
 		
 		//デバッグ
 		Print << Cursor::Pos(); // 現在のマウスカーソル座標を表示
 		Print << camera.angle.w;
-		Print << sample.angle.h;
 		Print << camera.pos;
-		//Line(600, 500, 600 + cos(camera.angle.w/50)*20,500 + sin(camera.angle.w/50)*20).draw(3, Palette::Red);
 	}
 }
 
