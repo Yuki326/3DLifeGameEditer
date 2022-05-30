@@ -38,11 +38,15 @@ struct _Triangle {
 struct Model {
 	Array<_Triangle3D> shape;
 	Object object;
-	Vec3 zahyo; //ゲームのフィールド(格子)上の座標
+	Vec3 zahyo; //ゲームのフィールド格子)上の座標
 	int hp;
 };
+struct LifeGameInfo {
+	Array<Model> model;
+	Grid<int32> fieldstate;
+};
 AfinParameter3D viewingPiperine;
-const int CELL_PER = 1;
+const double CELL_PER = 0.01;
 const int SIDE_CELLS = 40;
 // 共通
 Vec3 changePos3D(Vec3 p, AfinParameter3D afin) {
@@ -268,7 +272,30 @@ Array<_Triangle3D> putModel(Array<_Triangle3D> models, Vec3 pos) {
 	AfinParameter3D afin = { 1,0,0,pos.x,0,1,0,pos.y,0,0,1,pos.z,0,0,0,1 };	
 	return transFormModel(models, afin);
 }
-
+LifeGameInfo setLifeGame( Array<_Triangle3D> cubePolygons,Object core) {
+	Vec3 pos;
+	Grid<int32> fieldState(SIDE_CELLS, SIDE_CELLS, 0);
+	Array<_Triangle3D> framePolygons = resizeModel(cubePolygons, 60);
+	framePolygons = paintModel(framePolygons, { 0,255,0,45 });
+	Array<_Triangle3D> framePolygons2 = resizeModel(framePolygons, 0.1);
+	Array<Model> models = {
+		{framePolygons,core,{0,0,0},100},
+	};
+	for (int i = 0; i < SIDE_CELLS; i++) {
+		pos.x = 4 * (i - SIDE_CELLS / 2);
+		for (int j = 0; j < SIDE_CELLS; j++) {
+			pos.y = 4 * (j - SIDE_CELLS / 2);
+			for (int k = 0; k < SIDE_CELLS; k++) {
+				pos.z = 4 * (k - SIDE_CELLS / 2);
+				if (rand() % 10000 <= CELL_PER*100) {
+					models << Model{ putModel(cubePolygons,pos), core, { i,j,k }, 100 };
+					fieldState[i][j] &= 1 << k;
+				}
+			}
+		}
+	}
+	return LifeGameInfo{ models,fieldState };
+}
 void Main()
 {
 	// 背景を黒にする
@@ -314,34 +341,15 @@ void Main()
 
 	};
 	Object ex0 = { Angle{0,0},Vec3{0,0,0} };
-	Object ex1 = { Angle{0,0},Vec3{0,0,500} };
+	Object core = { Angle{0,0},Vec3{0,0,500} };
 	Object ex2 = { Angle{0,-12},Vec3{0,-40,500} };
 	Object ex3 = { Angle{0,-12},Vec3{50,50,50} };
 
-	Array<_Triangle3D> framePolygons = resizeModel(cubePolygons, 60);
-	framePolygons = paintModel(framePolygons, { 0,255,0,45 });
-	Array<_Triangle3D> framePolygons2 = resizeModel(framePolygons, 0.1);
-
-	Array<Model> models = {
-		{framePolygons,ex1,{0,0,0},100},
-
-	};
+	LifeGameInfo data = setLifeGame(cubePolygons, core);
+	Array<Model> models = data.model;
 	Grid<int32> fieldState(SIDE_CELLS, SIDE_CELLS, 0);//３次元配列　z軸は2進数で管理
-
-	Vec3 pos;
-	for (int i = 0; i < SIDE_CELLS; i++) {
-		pos.x = 4*(i - SIDE_CELLS / 2);
-		for (int j = 0; j < SIDE_CELLS; j++) {
-			pos.y = 4* (j - SIDE_CELLS / 2);
-			for (int k = 0; k < SIDE_CELLS; k++) {
-				pos.z = 4* (k - SIDE_CELLS / 2);
-				if (rand() % 100 <= CELL_PER) {
-					models << Model{ putModel(cubePolygons,pos), ex1, { i,j,k }, 100 };
-					fieldState[i][j] &= 1<<k;
-				}
-			}
-		}
-	}
+	fieldState = data.fieldstate;
+	
 	
 	//モデリング変換
 	Array<Model> models_W = toWorld(models);
@@ -380,6 +388,12 @@ void Main()
 		{
 			models[1].object.pos.y -= delta;
 		}
+		if (SimpleGUI::Button(U"Reset", Vec2(600, 300), 200))
+		{
+			LifeGameInfo data = setLifeGame(cubePolygons, core);
+			models = data.model;
+			fieldState = data.fieldstate;
+		}
 
 		ClearPrint();
 		for (int i = 0; i < models.size(); i++) {
@@ -389,8 +403,8 @@ void Main()
 		models[0].shape[4].color = HSV(hue, 0.6, 1.0);
 
 		//視点移動
-		camera.angle.w = Cursor::Pos().x - Scene::Center().x;
-		camera.angle.h = Cursor::Pos().y - Scene::Center().y;
+		//camera.angle.w = Cursor::Pos().x - Scene::Center().x;
+		//camera.angle.h = Cursor::Pos().y - Scene::Center().y;
 		
 		//モデリング変換
 		models_W = toWorld(models);
@@ -407,6 +421,7 @@ void Main()
 		//描画
 		t.map([](_Triangle t) {t.points.draw(t.color);  return 0; });
 		
+
 		//デバッグ
 		Print << Cursor::Pos(); // 現在のマウスカーソル座標を表示
 		Print << camera.angle.w;
