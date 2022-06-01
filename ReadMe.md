@@ -7,6 +7,9 @@ https://www.youtube.com/watch?v=dQJ5aEsP6Fs
 - ライブラリ：siv3D(0.43)1
 https://siv3d.github.io/ja-jp/
 
+# siv3d(0.43)のインストール手順
+https://zenn.dev/reputeless/articles/article-manual-install
+
 # 工夫点
 - 3dの描画をライブラリに頼らずにあえて自分で行っている。
 
